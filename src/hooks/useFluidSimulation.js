@@ -4,8 +4,16 @@ import * as THREE from "three";
 import {
   createFluidSim,
   runAdvection,
+  runDivergence,
+  runGradientSubtract,
+  runPressure,
   runSplat,
 } from "../shaders/fluidSimulation";
+
+// Below this much on-plane UV movement per frame, treat the pointer as
+// stationary and stop adding dye, so a resting cursor doesn't keep
+// replenishing a permanent blob faster than dyeDissipation can fade it.
+const STATIONARY_EPSILON = 1e-5;
 
 /**
  * Runs a lightweight GPU fluid simulation (velocity + dye fields) driven by
@@ -22,6 +30,7 @@ export function useFluidSimulation({
   splatForce,
   velocityDissipation,
   dyeDissipation,
+  pressureIterations,
 }) {
   const gl = useThree((state) => state.gl);
 
@@ -94,37 +103,52 @@ export function useFluidSimulation({
           surfaceHit.x / width + 0.5,
           surfaceHit.y / height + 0.5,
         );
+
+        const isMoving =
+          fluid.pointerUv.distanceTo(fluid.lastPointerUv) > STATIONARY_EPSILON;
+
         fluid.velocityImpulse
           .copy(fluid.pointerUv)
           .sub(fluid.lastPointerUv)
           .multiplyScalar(1 / Math.max(dt, 1e-4));
         fluid.lastPointerUv.copy(fluid.pointerUv);
 
-        runSplat(
-          gl,
-          fluid,
-          fluid.velocity,
-          fluid.pointerUv,
-          fluid.splatColorScratch.set(
-            fluid.velocityImpulse.x * splatForce,
-            fluid.velocityImpulse.y * splatForce,
-            0,
-          ),
-          splatRadius,
-          aspect,
-        );
+        if (isMoving) {
+          runSplat(
+            gl,
+            fluid,
+            fluid.velocity,
+            fluid.pointerUv,
+            fluid.splatColorScratch.set(
+              fluid.velocityImpulse.x * splatForce,
+              fluid.velocityImpulse.y * splatForce,
+              0,
+            ),
+            splatRadius,
+            aspect,
+          );
 
-        runSplat(
-          gl,
-          fluid,
-          fluid.dye,
-          fluid.pointerUv,
-          fluid.splatColorScratch.set(1, 1, 1),
-          splatRadius,
-          aspect,
-        );
+          runSplat(
+            gl,
+            fluid,
+            fluid.dye,
+            fluid.pointerUv,
+            fluid.splatColorScratch.set(1, 1, 1),
+            splatRadius,
+            aspect,
+          );
+        }
       }
     }
+
+    // Project the velocity field to be divergence-free before advecting
+    // anything with it. A splat injects velocity from nowhere (positive
+    // divergence); without cancelling that out via a pressure solve, the
+    // fluid has nothing pushing it to spread out, so it just keeps
+    // circulating in place near where it was drawn instead of dissipating.
+    runDivergence(gl, fluid);
+    runPressure(gl, fluid, pressureIterations);
+    runGradientSubtract(gl, fluid);
 
     // Self-advect the velocity field, then advect the dye by that velocity.
     runAdvection(

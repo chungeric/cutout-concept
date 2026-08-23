@@ -18,10 +18,20 @@ export const cutoutFragmentShader = /* glsl */ `
   uniform sampler2D fluidMap;
   uniform float fluidThreshold;
   uniform bool fluidEnabled;
+  uniform bool debugFluidMap;
 
   varying vec2 vUv;
 
   void main() {
+    // Debug: show the raw fluid dye density directly, skipping the image
+    // cutout and fluid-trail cutout entirely.
+    if (debugFluidMap) {
+      float fluidDensity = texture2D(fluidMap, vUv).r;
+      gl_FragColor = vec4(vec3(fluidDensity), 1.0);
+      #include <colorspace_fragment>
+      return;
+    }
+
     // Fit the texture like CSS "background-size: contain", scaled to the
     // plane's full height. Horizontally it's centered, cropped if the image
     // is relatively wider than the plane, or letterboxed with the plane color

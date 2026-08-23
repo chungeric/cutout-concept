@@ -18,19 +18,23 @@ export function FullscreenPlanes() {
   });
   const {
     fluidTrailEnabled,
+    debugFluidMap,
     splatRadius,
     splatForce,
     velocityDissipation,
     dyeDissipation,
+    pressureIterations,
     fluidThreshold,
   } = useControls({
     Fluid: folder({
       fluidTrailEnabled: true,
-      splatRadius: { value: 0.05, min: 0.01, max: 0.3, step: 0.01 },
-      splatForce: { value: 6, min: 0, max: 20, step: 0.5 },
+      debugFluidMap: false,
+      splatRadius: { value: 0.03, min: 0.01, max: 0.3, step: 0.01 },
+      splatForce: { value: 1.5, min: 0, max: 20, step: 0.5 },
       velocityDissipation: { value: 0.995, min: 0.9, max: 1, step: 0.001 },
-      dyeDissipation: { value: 0.96, min: 0.8, max: 1, step: 0.005 },
-      fluidThreshold: { value: 0.15, min: 0.01, max: 1, step: 0.01 },
+      dyeDissipation: { value: 0.88, min: 0.8, max: 1, step: 0.005 },
+      pressureIterations: { value: 20, min: 0, max: 50, step: 1 },
+      fluidThreshold: { value: 0.01, min: 0.01, max: 1, step: 0.01 },
     }),
   });
   const { dotColor, dotBackgroundColor, dotSize, dotSpacing, noiseAmount } =
@@ -58,6 +62,7 @@ export function FullscreenPlanes() {
     splatForce,
     velocityDissipation,
     dyeDissipation,
+    pressureIterations,
   });
 
   const frontUniforms = useMemo(
@@ -70,6 +75,7 @@ export function FullscreenPlanes() {
       fluidMap: fluidMapUniform,
       fluidThreshold: { value: fluidThreshold },
       fluidEnabled: { value: fluidTrailEnabled },
+      debugFluidMap: { value: debugFluidMap },
     }),
     [
       texture,
@@ -81,6 +87,7 @@ export function FullscreenPlanes() {
       fluidMapUniform,
       fluidThreshold,
       fluidTrailEnabled,
+      debugFluidMap,
     ],
   );
 
