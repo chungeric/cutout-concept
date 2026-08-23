@@ -1,121 +1,139 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import viteLogo from "./assets/vite.svg";
-import heroImg from "./assets/hero.png";
+import { useMemo, useRef } from "react";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import * as THREE from "three";
 import "./App.css";
+import { Environment, OrbitControls, useTexture } from "@react-three/drei";
+import { useControls } from "leva";
 
-function App() {
-  const [count, setCount] = useState(0);
+const vertexShader = /* glsl */ `
+  varying vec2 vUv;
+
+  void main() {
+    vUv = uv;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  }
+`;
+
+const fragmentShader = /* glsl */ `
+  uniform sampler2D map;
+  uniform vec3 color;
+  uniform float faceAspect;
+  uniform float imageAspect;
+  uniform float threshold;
+
+  varying vec2 vUv;
+
+  void main() {
+    // Fit the texture like CSS "background-size: contain", scaled to the
+    // plane's full height. Horizontally it's centered, cropped if the image
+    // is relatively wider than the plane, or letterboxed with the plane color
+    // if the image is relatively narrower.
+    float scale = imageAspect / faceAspect;
+    vec2 uv = vec2((vUv.x - 0.5) / scale + 0.5, vUv.y);
+    bool insideImage = uv.x >= 0.0 && uv.x <= 1.0;
+
+    if (insideImage) {
+      vec4 texColor = texture2D(map, uv);
+      float luminance = dot(texColor.rgb, vec3(0.299, 0.587, 0.114));
+
+      // Cut out the black part of the texture, revealing what's behind the plane.
+      if (luminance <= threshold) {
+        discard;
+      }
+    }
+
+    gl_FragColor = vec4(color, 1.0);
+
+    // #include <tonemapping_fragment>
+    #include <colorspace_fragment>
+  }
+`;
+
+function FullscreenPlane() {
+  const { width, height } = useThree((state) => state.viewport);
+  const { color, fadeColor, threshold, count, spacing } = useControls({
+    color: "#05020a",
+    fadeColor: "#0e1424",
+    threshold: { value: 0.15, min: 0, max: 1, step: 0.01 },
+    count: { value: 50, min: 1, max: 100, step: 1 },
+    spacing: { value: 0.009, min: 0, max: 1, step: 0.0001 },
+  });
+  const texture = useTexture("/eric_chung.png", (loadedTexture) => {
+    loadedTexture.colorSpace = THREE.SRGBColorSpace;
+    loadedTexture.needsUpdate = true;
+  });
+  const imageAspect = texture.image.width / texture.image.height;
+
+  const planeUniforms = useMemo(
+    () =>
+      Array.from({ length: count }, (_, i) => {
+        // Fade each successive plane's color toward `fadeColor`, so the last
+        // plane blends in completely instead of relying on alpha (which
+        // compounds toward opaque as more overlapping transparent layers stack).
+        const t = count > 1 ? i / (count - 1) : 0;
+        const fadedColor = new THREE.Color(color).lerp(
+          new THREE.Color(fadeColor),
+          t,
+        );
+
+        return {
+          map: { value: texture },
+          color: { value: fadedColor },
+          faceAspect: { value: width / height },
+          imageAspect: { value: imageAspect },
+          threshold: { value: threshold },
+        };
+      }),
+    [count, texture, color, fadeColor, width, height, imageAspect, threshold],
+  );
 
   return (
     <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
+      {planeUniforms.map((uniforms, i) => (
+        <mesh key={i} position={[0, 0, -i * spacing]}>
+          <planeGeometry args={[width, height]} />
+          <shaderMaterial
+            uniforms={uniforms}
+            vertexShader={vertexShader}
+            fragmentShader={fragmentShader}
+            side={THREE.DoubleSide}
+          />
+        </mesh>
+      ))}
     </>
+  );
+}
+
+function SpinningBox() {
+  const meshRef = useRef(null);
+
+  useFrame((_, delta) => {
+    if (!meshRef.current) return;
+    meshRef.current.rotation.x += delta * 0.4;
+    meshRef.current.rotation.y += delta * 0.6;
+  });
+
+  return (
+    <mesh ref={meshRef} position={[0, 0, -15]}>
+      <boxGeometry args={[2, 2, 2]} />
+      <meshStandardMaterial color="yellow" />
+    </mesh>
+  );
+}
+
+function App() {
+  const { background } = useControls({
+    background: "#7bc3e2",
+  });
+
+  return (
+    <Canvas camera={{ fov: 30 }}>
+      <color attach="background" args={[background]} />
+      <Environment preset="studio" />
+      <SpinningBox />
+      <FullscreenPlane />
+      <OrbitControls />
+    </Canvas>
   );
 }
 
