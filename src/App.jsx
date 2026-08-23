@@ -3,7 +3,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import "./App.css";
 import { Environment, OrbitControls, useTexture } from "@react-three/drei";
-import { useControls } from "leva";
+import { folder, useControls } from "leva";
 
 const vertexShader = /* glsl */ `
   varying vec2 vUv;
@@ -49,57 +49,145 @@ const fragmentShader = /* glsl */ `
   }
 `;
 
+// Planes other than the frontmost one keep the same black-pixel cutout mask,
+// but fill the surviving (non-cutout) area with a dot grid drawn in screen
+// space (based on gl_FragCoord) instead of a solid color.
+const dotsVertexShader = vertexShader;
+
+const dotsFragmentShader = /* glsl */ `
+  uniform sampler2D map;
+  uniform float faceAspect;
+  uniform float imageAspect;
+  uniform float threshold;
+  uniform vec3 dotColor;
+  uniform vec3 backgroundColor;
+  uniform float dotSize;
+  uniform float dotSpacing;
+  uniform float noiseAmount;
+
+  varying vec2 vUv;
+
+  float random(vec2 st) {
+    return fract(sin(dot(st, vec2(12.9898, 78.233))) * 43758.5453123);
+  }
+
+  void main() {
+    // Same "contain"-fit cutout mask as the front plane.
+    float scale = imageAspect / faceAspect;
+    vec2 uv = vec2((vUv.x - 0.5) / scale + 0.5, vUv.y);
+    bool insideImage = uv.x >= 0.0 && uv.x <= 1.0;
+
+    if (insideImage) {
+      vec4 texColor = texture2D(map, uv);
+      float luminance = dot(texColor.rgb, vec3(0.299, 0.587, 0.114));
+
+      if (luminance <= threshold) {
+        discard;
+      }
+    }
+
+    vec2 cell = mod(gl_FragCoord.xy, dotSpacing);
+    vec2 center = vec2(dotSpacing * 0.5);
+    float dist = length(cell - center);
+
+    // Hash per-pixel (not per-cell) so the dot edges pick up a noisy,
+    // slightly blurry dither instead of the whole dot growing or shrinking.
+    float noise = (random(gl_FragCoord.xy) - 0.5) * 2.0;
+    float radius = max(dotSize * 0.5 + noise * noiseAmount * dotSpacing * 0.5, 0.0);
+
+    vec3 outColor = dist < radius ? dotColor : backgroundColor;
+    gl_FragColor = vec4(outColor, 1.0);
+
+    #include <colorspace_fragment>
+  }
+`;
+
 function FullscreenPlane() {
   const { width, height } = useThree((state) => state.viewport);
-  const { color, fadeColor, threshold, count, spacing } = useControls({
+  const { color, threshold, count, spacing } = useControls({
     color: "#05020a",
-    fadeColor: "#0e1424",
     threshold: { value: 0.15, min: 0, max: 1, step: 0.01 },
-    count: { value: 50, min: 1, max: 100, step: 1 },
+    count: { value: 30, min: 1, max: 100, step: 1 },
     spacing: { value: 0.009, min: 0, max: 1, step: 0.0001 },
   });
+  const { dotColor, dotBackgroundColor, dotSize, dotSpacing, noiseAmount } =
+    useControls({
+      Dots: folder({
+        dotColor: "#7bc3e2",
+        dotBackgroundColor: "#05020a",
+        dotSize: { value: 4, min: 1, max: 100, step: 1 },
+        dotSpacing: { value: 5, min: 5, max: 200, step: 1 },
+        noiseAmount: { value: 0.06, min: 0, max: 1, step: 0.01 },
+      }),
+    });
   const texture = useTexture("/eric_chung.png", (loadedTexture) => {
     loadedTexture.colorSpace = THREE.SRGBColorSpace;
     loadedTexture.needsUpdate = true;
   });
   const imageAspect = texture.image.width / texture.image.height;
 
-  const planeUniforms = useMemo(
-    () =>
-      Array.from({ length: count }, (_, i) => {
-        // Fade each successive plane's color toward `fadeColor`, so the last
-        // plane blends in completely instead of relying on alpha (which
-        // compounds toward opaque as more overlapping transparent layers stack).
-        const t = count > 1 ? i / (count - 1) : 0;
-        const fadedColor = new THREE.Color(color).lerp(
-          new THREE.Color(fadeColor),
-          t,
-        );
+  const frontUniforms = useMemo(
+    () => ({
+      map: { value: texture },
+      color: { value: new THREE.Color(color) },
+      faceAspect: { value: width / height },
+      imageAspect: { value: imageAspect },
+      threshold: { value: threshold },
+    }),
+    [texture, color, width, height, imageAspect, threshold],
+  );
 
-        return {
-          map: { value: texture },
-          color: { value: fadedColor },
-          faceAspect: { value: width / height },
-          imageAspect: { value: imageAspect },
-          threshold: { value: threshold },
-        };
-      }),
-    [count, texture, color, fadeColor, width, height, imageAspect, threshold],
+  const dotUniforms = useMemo(
+    () => ({
+      map: { value: texture },
+      faceAspect: { value: width / height },
+      imageAspect: { value: imageAspect },
+      threshold: { value: threshold },
+      dotColor: { value: new THREE.Color(dotColor) },
+      backgroundColor: { value: new THREE.Color(dotBackgroundColor) },
+      dotSize: { value: dotSize },
+      dotSpacing: { value: dotSpacing },
+      noiseAmount: { value: noiseAmount },
+    }),
+    [
+      texture,
+      width,
+      height,
+      imageAspect,
+      threshold,
+      dotColor,
+      dotBackgroundColor,
+      dotSize,
+      dotSpacing,
+      noiseAmount,
+    ],
   );
 
   return (
     <>
-      {planeUniforms.map((uniforms, i) => (
-        <mesh key={i} position={[0, 0, -i * spacing]}>
-          <planeGeometry args={[width, height]} />
-          <shaderMaterial
-            uniforms={uniforms}
-            vertexShader={vertexShader}
-            fragmentShader={fragmentShader}
-            side={THREE.DoubleSide}
-          />
-        </mesh>
-      ))}
+      {Array.from({ length: count }, (_, i) =>
+        i === 0 ? (
+          <mesh key={i} position={[0, 0, 0]}>
+            <planeGeometry args={[width, height]} />
+            <shaderMaterial
+              uniforms={frontUniforms}
+              vertexShader={vertexShader}
+              fragmentShader={fragmentShader}
+              side={THREE.DoubleSide}
+            />
+          </mesh>
+        ) : (
+          <mesh key={i} position={[0, 0, -i * spacing]}>
+            <planeGeometry args={[width, height]} />
+            <shaderMaterial
+              uniforms={dotUniforms}
+              vertexShader={dotsVertexShader}
+              fragmentShader={dotsFragmentShader}
+              side={THREE.DoubleSide}
+            />
+          </mesh>
+        ),
+      )}
     </>
   );
 }
