@@ -54,6 +54,27 @@ const advectionFragmentShader = /* glsl */ `
   }
 `;
 
+// Repeated 4-neighbor averaging of the velocity field acts as viscous
+// diffusion: it damps sharp, high-frequency rotation (vortices) while
+// leaving broad, slow motion mostly intact. Without this, a divergence-free
+// velocity field left to its own devices spins into crisp vortices, like
+// water; with it, the flow resists spinning and drags along its neighbors
+// instead, reading as thick and gooey instead of watery.
+const viscosityFragmentShader = /* glsl */ `
+  uniform sampler2D velocity;
+  uniform vec2 texelSize;
+
+  varying vec2 vUv;
+
+  void main() {
+    vec2 L = texture2D(velocity, vUv - vec2(texelSize.x, 0.0)).xy;
+    vec2 R = texture2D(velocity, vUv + vec2(texelSize.x, 0.0)).xy;
+    vec2 B = texture2D(velocity, vUv - vec2(0.0, texelSize.y)).xy;
+    vec2 T = texture2D(velocity, vUv + vec2(0.0, texelSize.y)).xy;
+    gl_FragColor = vec4((L + R + B + T) * 0.25, 0.0, 1.0);
+  }
+`;
+
 // Computes the divergence of the velocity field: how much more flows out of
 // each texel than flows in. A splat injects velocity from nowhere (positive
 // divergence), and without correcting for that the fluid has no reason to
@@ -178,6 +199,17 @@ export function createFluidSim() {
     },
   });
 
+  const viscosityMaterial = new THREE.ShaderMaterial({
+    vertexShader: simVertexShader,
+    fragmentShader: viscosityFragmentShader,
+    depthTest: false,
+    depthWrite: false,
+    uniforms: {
+      velocity: { value: null },
+      texelSize: { value: texelSize },
+    },
+  });
+
   const divergenceMaterial = new THREE.ShaderMaterial({
     vertexShader: simVertexShader,
     fragmentShader: divergenceFragmentShader,
@@ -227,6 +259,7 @@ export function createFluidSim() {
     quad,
     splatMaterial,
     advectionMaterial,
+    viscosityMaterial,
     divergenceMaterial,
     pressureMaterial,
     gradientSubtractMaterial,
@@ -243,6 +276,7 @@ export function createFluidSim() {
       geometry.dispose();
       splatMaterial.dispose();
       advectionMaterial.dispose();
+      viscosityMaterial.dispose();
       divergenceMaterial.dispose();
       pressureMaterial.dispose();
       gradientSubtractMaterial.dispose();
@@ -289,6 +323,19 @@ export function runAdvection(
   gl.render(fluid.scene, fluid.camera);
   gl.setRenderTarget(null);
   target.swap();
+}
+
+export function runViscosity(gl, fluid, iterations) {
+  fluid.quad.material = fluid.viscosityMaterial;
+
+  for (let i = 0; i < iterations; i++) {
+    fluid.viscosityMaterial.uniforms.velocity.value = fluid.velocity.read.texture;
+
+    gl.setRenderTarget(fluid.velocity.write);
+    gl.render(fluid.scene, fluid.camera);
+    gl.setRenderTarget(null);
+    fluid.velocity.swap();
+  }
 }
 
 export function runDivergence(gl, fluid) {

@@ -32,8 +32,7 @@ export function FullscreenPlanes({ orbitEnabled }) {
   // the required margin scales with aspect ratio and camera distance too).
   const tiltRecession =
     (Math.sin(MAX_TILT) * (width + height)) / (2 * distance);
-  const planeOverscan =
-    TILT_SAFETY_BUFFER / (1 - Math.min(tiltRecession, 0.9));
+  const planeOverscan = TILT_SAFETY_BUFFER / (1 - Math.min(tiltRecession, 0.9));
   const planeWidth = width * planeOverscan;
   const planeHeight = height * planeOverscan;
   const { color, threshold, count, spacing } = useControls({
@@ -50,17 +49,19 @@ export function FullscreenPlanes({ orbitEnabled }) {
     velocityDissipation,
     dyeDissipation,
     pressureIterations,
+    viscosityIterations,
     fluidThreshold,
   } = useControls({
     Fluid: folder({
       fluidTrailEnabled: true,
       debugFluidMap: false,
-      splatRadius: { value: 0.03, min: 0.01, max: 0.3, step: 0.01 },
-      splatForce: { value: 1.5, min: 0, max: 20, step: 0.5 },
+      splatRadius: { value: 0.06, min: 0.01, max: 0.3, step: 0.01 },
+      splatForce: { value: 1.0, min: 0, max: 20, step: 0.5 },
       velocityDissipation: { value: 0.995, min: 0.9, max: 1, step: 0.001 },
-      dyeDissipation: { value: 0.88, min: 0.8, max: 1, step: 0.005 },
+      dyeDissipation: { value: 0.93, min: 0.8, max: 1, step: 0.005 },
       pressureIterations: { value: 20, min: 0, max: 50, step: 1 },
-      fluidThreshold: { value: 0.01, min: 0.01, max: 1, step: 0.01 },
+      viscosityIterations: { value: 6, min: 0, max: 30, step: 1 },
+      fluidThreshold: { value: 0.44, min: 0.01, max: 1, step: 0.01 },
     }),
   });
   const { dotColor, dotBackgroundColor, dotSize, dotSpacing, noiseAmount } =
@@ -90,6 +91,7 @@ export function FullscreenPlanes({ orbitEnabled }) {
     velocityDissipation,
     dyeDissipation,
     pressureIterations,
+    viscosityIterations,
   });
 
   const frontUniforms = useMemo(

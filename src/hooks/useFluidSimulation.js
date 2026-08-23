@@ -8,6 +8,7 @@ import {
   runGradientSubtract,
   runPressure,
   runSplat,
+  runViscosity,
 } from "../shaders/fluidSimulation";
 
 // Below this much on-plane UV movement per frame, treat the pointer as
@@ -32,6 +33,7 @@ export function useFluidSimulation({
   velocityDissipation,
   dyeDissipation,
   pressureIterations,
+  viscosityIterations,
 }) {
   const gl = useThree((state) => state.gl);
 
@@ -151,6 +153,13 @@ export function useFluidSimulation({
         }
       }
     }
+
+    // Diffuse the velocity field (viscosity) before projecting it. Left
+    // alone, a divergence-free field spins into sharp vortices wherever it's
+    // disturbed, like water; smoothing out that rotation here first makes it
+    // resist spinning and drag its surroundings along instead, reading as
+    // thick and gooey rather than watery.
+    runViscosity(gl, fluid, viscosityIterations);
 
     // Project the velocity field to be divergence-free before advecting
     // anything with it. A splat injects velocity from nowhere (positive
