@@ -6,8 +6,9 @@ import { SpinningBox } from "./components/SpinningBox";
 import { FullscreenPlanes } from "./components/FullscreenPlanes";
 
 function App() {
-  const { background } = useControls({
+  const { background, orbitEnabled } = useControls({
     background: "#7bc3e2",
+    orbitEnabled: false,
   });
 
   return (
@@ -15,8 +16,8 @@ function App() {
       <color attach="background" args={[background]} />
       <Environment preset="studio" />
       <SpinningBox />
-      <FullscreenPlanes />
-      <OrbitControls />
+      <FullscreenPlanes orbitEnabled={orbitEnabled} />
+      <OrbitControls enabled={orbitEnabled} />
     </Canvas>
   );
 }

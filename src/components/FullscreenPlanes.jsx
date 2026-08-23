@@ -1,5 +1,5 @@
-import { useMemo } from "react";
-import { useThree } from "@react-three/fiber";
+import { useMemo, useRef } from "react";
+import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { useTexture } from "@react-three/drei";
 import { folder, useControls } from "leva";
@@ -8,8 +8,34 @@ import { FrontPlane } from "./FrontPlane";
 import { BackPlane } from "./BackPlane";
 import { DotPlane } from "./DotPlane";
 
-export function FullscreenPlanes() {
-  const { width, height } = useThree((state) => state.viewport);
+// How far the plane stack tilts toward the cursor when orbit is off, and how
+// quickly it eases toward that target each frame.
+const MAX_TILT = 0.12;
+const TILT_EASE = 0.05;
+
+// Extra margin on top of the derived minimum overscan, to absorb the
+// small-angle approximation below and the one-frame lag between the tilt
+// easing toward MAX_TILT and the geometry being sized for it.
+const TILT_SAFETY_BUFFER = 1.15;
+
+export function FullscreenPlanes({ orbitEnabled }) {
+  const groupRef = useRef(null);
+  const { width, height, distance } = useThree((state) => state.viewport);
+
+  // A tilted plane's worst-case corner (the one both axes push away from the
+  // camera at once, e.g. bottom-left corner when tilting toward top-right)
+  // recedes by roughly sin(tilt) * (half-width + half-height), which shrinks
+  // its projected size by a factor of (1 - that / distance). Oversize by the
+  // inverse of that so the plane still reaches every screen edge at max
+  // tilt, instead of assuming a single edge tilting on one axis (too
+  // optimistic - real corners recede further under combined X+Y tilt, and
+  // the required margin scales with aspect ratio and camera distance too).
+  const tiltRecession =
+    (Math.sin(MAX_TILT) * (width + height)) / (2 * distance);
+  const planeOverscan =
+    TILT_SAFETY_BUFFER / (1 - Math.min(tiltRecession, 0.9));
+  const planeWidth = width * planeOverscan;
+  const planeHeight = height * planeOverscan;
   const { color, threshold, count, spacing } = useControls({
     color: "#05020a",
     threshold: { value: 0.15, min: 0, max: 1, step: 0.01 },
@@ -54,9 +80,10 @@ export function FullscreenPlanes() {
   const imageAspect = texture.image.width / texture.image.height;
 
   const fluidMapUniform = useFluidSimulation({
-    width,
-    height,
+    width: planeWidth,
+    height: planeHeight,
     depth: (count - 1) * spacing,
+    groupRef,
     enabled: fluidTrailEnabled,
     splatRadius,
     splatForce,
@@ -123,8 +150,29 @@ export function FullscreenPlanes() {
     ],
   );
 
+  useFrame((state) => {
+    if (!groupRef.current) return;
+
+    // When orbit is off, gently tilt the whole stack toward the cursor for a
+    // subtle parallax feel. When orbit is on, the user is driving the camera
+    // directly, so ease the tilt back to neutral instead of fighting it.
+    const targetRotationY = orbitEnabled ? 0 : state.pointer.x * MAX_TILT;
+    const targetRotationX = orbitEnabled ? 0 : -state.pointer.y * MAX_TILT;
+
+    groupRef.current.rotation.y = THREE.MathUtils.lerp(
+      groupRef.current.rotation.y,
+      targetRotationY,
+      TILT_EASE,
+    );
+    groupRef.current.rotation.x = THREE.MathUtils.lerp(
+      groupRef.current.rotation.x,
+      targetRotationX,
+      TILT_EASE,
+    );
+  });
+
   return (
-    <>
+    <group ref={groupRef}>
       {Array.from({ length: count }, (_, i) => {
         const position = [0, 0, -i * spacing];
 
@@ -132,8 +180,8 @@ export function FullscreenPlanes() {
           return (
             <FrontPlane
               key={i}
-              width={width}
-              height={height}
+              width={planeWidth}
+              height={planeHeight}
               position={position}
               uniforms={frontUniforms}
             />
@@ -144,8 +192,8 @@ export function FullscreenPlanes() {
           return (
             <BackPlane
               key={i}
-              width={width}
-              height={height}
+              width={planeWidth}
+              height={planeHeight}
               position={position}
               uniforms={frontUniforms}
             />
@@ -155,13 +203,13 @@ export function FullscreenPlanes() {
         return (
           <DotPlane
             key={i}
-            width={width}
-            height={height}
+            width={planeWidth}
+            height={planeHeight}
             position={position}
             uniforms={dotUniforms}
           />
         );
       })}
-    </>
+    </group>
   );
 }

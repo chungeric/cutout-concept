@@ -25,6 +25,7 @@ export function useFluidSimulation({
   width,
   height,
   depth,
+  groupRef,
   enabled,
   splatRadius,
   splatForce,
@@ -44,19 +45,19 @@ export function useFluidSimulation({
 
   // Reused every frame to project the pointer onto the plane stack's surface
   // instead of treating screen-space NDC as if it were plane UV. The stack
-  // spans from z = 0 (front) to z = -depth (back); since OrbitControls can
-  // orbit the camera to either side, we test both boundary planes and use
-  // whichever one the ray actually hits first (closest to the camera).
+  // spans from local z = 0 (front) to z = -depth (back); since OrbitControls
+  // can orbit the camera to either side, we test both boundary planes and use
+  // whichever one the ray actually hits first (closest to the camera). The
+  // group holding the planes can also be tilted (see the cursor-tilt effect
+  // in FullscreenPlanes), so these planes are rebuilt from the group's live
+  // world transform every frame rather than assumed to sit flat at z = 0.
   const raycaster = useMemo(() => new THREE.Raycaster(), []);
-  const nearSurface = useMemo(
-    () => new THREE.Plane(new THREE.Vector3(0, 0, 1), 0),
-    [],
-  );
-  const farSurface = useMemo(
-    () => new THREE.Plane(new THREE.Vector3(0, 0, 1), 0),
-    [],
-  );
+  const nearSurface = useMemo(() => new THREE.Plane(), []);
+  const farSurface = useMemo(() => new THREE.Plane(), []);
   const surfaceHit = useMemo(() => new THREE.Vector3(), []);
+  const surfaceNormal = useMemo(() => new THREE.Vector3(), []);
+  const surfacePoint = useMemo(() => new THREE.Vector3(), []);
+  const localHit = useMemo(() => new THREE.Vector3(), []);
 
   useEffect(() => {
     fluidRef.current = createFluidSim();
@@ -85,8 +86,17 @@ export function useFluidSimulation({
     const dt = Math.min(delta, 1 / 30);
     const aspect = width / height;
 
-    if (fluid.hasPointer && enabled) {
-      farSurface.constant = depth;
+    const group = groupRef.current;
+
+    if (fluid.hasPointer && enabled && group) {
+      group.updateWorldMatrix(true, false);
+
+      surfaceNormal.set(0, 0, 1).transformDirection(group.matrixWorld);
+      surfacePoint.set(0, 0, 0).applyMatrix4(group.matrixWorld);
+      nearSurface.setFromNormalAndCoplanarPoint(surfaceNormal, surfacePoint);
+
+      surfacePoint.set(0, 0, -depth).applyMatrix4(group.matrixWorld);
+      farSurface.setFromNormalAndCoplanarPoint(surfaceNormal, surfacePoint);
 
       raycaster.setFromCamera(state.pointer, state.camera);
       const nearT = raycaster.ray.distanceToPlane(nearSurface);
@@ -99,9 +109,10 @@ export function useFluidSimulation({
 
       if (closestT !== null) {
         raycaster.ray.at(closestT, surfaceHit);
+        group.worldToLocal(localHit.copy(surfaceHit));
         fluid.pointerUv.set(
-          surfaceHit.x / width + 0.5,
-          surfaceHit.y / height + 0.5,
+          localHit.x / width + 0.5,
+          localHit.y / height + 0.5,
         );
 
         const isMoving =
