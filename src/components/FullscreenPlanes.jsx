@@ -3,7 +3,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { useTexture } from "@react-three/drei";
 import { folder, useControls } from "leva";
-import { useFluidSimulation } from "../hooks/useFluidSimulation";
+import { useCursorTrail } from "../hooks/useCursorTrail";
 import { FrontPlane } from "./FrontPlane";
 import { BackPlane } from "./BackPlane";
 import { DotPlane } from "./DotPlane";
@@ -42,26 +42,18 @@ export function FullscreenPlanes({ orbitEnabled }) {
     spacing: { value: 0.009, min: 0, max: 1, step: 0.0001 },
   });
   const {
-    fluidTrailEnabled,
-    debugFluidMap,
-    splatRadius,
-    splatForce,
-    velocityDissipation,
-    dyeDissipation,
-    pressureIterations,
-    viscosityIterations,
+    trailEnabled,
+    debugTrailMap,
+    trailRadius,
+    trailDecay,
     fluidThreshold,
   } = useControls({
-    Fluid: folder({
-      fluidTrailEnabled: true,
-      debugFluidMap: false,
-      splatRadius: { value: 0.06, min: 0.01, max: 0.3, step: 0.01 },
-      splatForce: { value: 1.0, min: 0, max: 20, step: 0.5 },
-      velocityDissipation: { value: 0.995, min: 0.9, max: 1, step: 0.001 },
-      dyeDissipation: { value: 0.93, min: 0.8, max: 1, step: 0.005 },
-      pressureIterations: { value: 20, min: 0, max: 50, step: 1 },
-      viscosityIterations: { value: 6, min: 0, max: 30, step: 1 },
-      fluidThreshold: { value: 0.44, min: 0.01, max: 1, step: 0.01 },
+    Trail: folder({
+      trailEnabled: true,
+      debugTrailMap: false,
+      trailRadius: { value: 0.1, min: 0.01, max: 0.3, step: 0.01 },
+      trailDecay: { value: 0.9, min: 0.8, max: 1, step: 0.005 },
+      fluidThreshold: { value: 0.5, min: 0.01, max: 1, step: 0.01 },
     }),
   });
   const { dotColor, dotBackgroundColor, dotSize, dotSpacing, noiseAmount } =
@@ -80,18 +72,14 @@ export function FullscreenPlanes({ orbitEnabled }) {
   });
   const imageAspect = texture.image.width / texture.image.height;
 
-  const fluidMapUniform = useFluidSimulation({
+  const fluidMapUniform = useCursorTrail({
     width: planeWidth,
     height: planeHeight,
     depth: (count - 1) * spacing,
     groupRef,
-    enabled: fluidTrailEnabled,
-    splatRadius,
-    splatForce,
-    velocityDissipation,
-    dyeDissipation,
-    pressureIterations,
-    viscosityIterations,
+    enabled: trailEnabled,
+    radius: trailRadius,
+    decay: trailDecay,
   });
 
   const frontUniforms = useMemo(
@@ -103,8 +91,8 @@ export function FullscreenPlanes({ orbitEnabled }) {
       threshold: { value: threshold },
       fluidMap: fluidMapUniform,
       fluidThreshold: { value: fluidThreshold },
-      fluidEnabled: { value: fluidTrailEnabled },
-      debugFluidMap: { value: debugFluidMap },
+      fluidEnabled: { value: trailEnabled },
+      debugTrailMap: { value: debugTrailMap },
     }),
     [
       texture,
@@ -115,8 +103,8 @@ export function FullscreenPlanes({ orbitEnabled }) {
       threshold,
       fluidMapUniform,
       fluidThreshold,
-      fluidTrailEnabled,
-      debugFluidMap,
+      trailEnabled,
+      debugTrailMap,
     ],
   );
 
@@ -128,7 +116,7 @@ export function FullscreenPlanes({ orbitEnabled }) {
       threshold: { value: threshold },
       fluidMap: fluidMapUniform,
       fluidThreshold: { value: fluidThreshold },
-      fluidEnabled: { value: fluidTrailEnabled },
+      fluidEnabled: { value: trailEnabled },
       dotColor: { value: new THREE.Color(dotColor) },
       backgroundColor: { value: new THREE.Color(dotBackgroundColor) },
       dotSize: { value: dotSize },
@@ -143,7 +131,7 @@ export function FullscreenPlanes({ orbitEnabled }) {
       threshold,
       fluidMapUniform,
       fluidThreshold,
-      fluidTrailEnabled,
+      trailEnabled,
       dotColor,
       dotBackgroundColor,
       dotSize,
