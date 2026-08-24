@@ -8,8 +8,8 @@ export function SpinningBox() {
   const { size, color } = useControls({
     "Spinning Box": folder(
       {
-        size: { value: 2, min: 0.1, max: 10, step: 0.1 },
-        color: "#ffff00",
+        size: { value: 2.5, min: 0.1, max: 10, step: 0.1 },
+        color: "#50bdff",
       },
       { collapsed: true },
     ),

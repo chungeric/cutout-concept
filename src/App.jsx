@@ -10,7 +10,7 @@ function App() {
   const { background, orbitEnabled } = useControls({
     Scene: folder(
       {
-        background: "#7bc3e2",
+        background: "#330e4b",
         orbitEnabled: false,
       },
       { collapsed: true },

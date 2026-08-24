@@ -40,10 +40,10 @@ export function FullscreenPlanes({ orbitEnabled }) {
     Planes: folder(
       {
         planesVisible: true,
-        color: "#05020a",
+        color: "#07030d",
         threshold: { value: 0.15, min: 0, max: 1, step: 0.01 },
-        count: { value: 30, min: 1, max: 100, step: 1 },
-        spacing: { value: 0.009, min: 0, max: 1, step: 0.0001 },
+        count: { value: 44, min: 1, max: 100, step: 1 },
+        spacing: { value: 0.01, min: 0, max: 1, step: 0.0001 },
       },
       { collapsed: true },
     ),
@@ -60,8 +60,8 @@ export function FullscreenPlanes({ orbitEnabled }) {
         trailEnabled: true,
         debugTrailMap: false,
         trailRadius: { value: 0.1, min: 0.01, max: 0.3, step: 0.01 },
-        trailDecay: { value: 0.97, min: 0.8, max: 1, step: 0.01 },
-        fluidThreshold: { value: 1, min: 0.01, max: 1, step: 0.01 },
+        trailDecay: { value: 0.96, min: 0.8, max: 1, step: 0.01 },
+        fluidThreshold: { value: 0.74, min: 0.01, max: 1, step: 0.01 },
       },
       { collapsed: true },
     ),
@@ -82,9 +82,9 @@ export function FullscreenPlanes({ orbitEnabled }) {
         Color: folder({ middleColor: "#7bc3e2" }, { collapsed: true }),
         Checkerboard: folder(
           {
-            checkerColor: "#7bc3e2",
-            checkerBackgroundColor: "#05020a",
-            checkerScale: { value: 4, min: 2, max: 10, step: 1 },
+            checkerColor: "#e9ff00",
+            checkerBackgroundColor: "#019d28",
+            checkerScale: { value: 5, min: 2, max: 10, step: 1 },
           },
           { collapsed: true },
         ),
