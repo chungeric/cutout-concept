@@ -1,12 +1,20 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
-import { createTrail, runTrailStep } from "../shaders/trail";
+import { TRAIL_RESOLUTION, createTrail, runTrailStep } from "../shaders/trail";
 
 // Below this much on-plane UV movement per frame, treat the pointer as
 // stationary and stop adding paint, so a resting cursor doesn't keep
 // replenishing a permanent blob faster than decay can fade it.
 const STATIONARY_EPSILON = 0.001;
+
+// Above this many pixels of movement in a single frame - measured in the
+// trail texture's fixed TRAIL_RESOLUTION grid, so it means the same thing
+// regardless of window size - treat it as a teleport rather than real
+// motion (e.g. the pointer left the window and re-entered at a different
+// edge) and snap to the new position instead of painting one long stroke
+// across the gap, which would otherwise flash across the screen.
+const MAX_JUMP_PIXELS = 40;
 
 /**
  * Paints a soft, fading trail wherever the pointer moves across the plane
@@ -102,6 +110,19 @@ export function useCursorTrail({
           localHit.x / width + 0.5,
           localHit.y / height + 0.5,
         );
+
+        // Matches the trail shader's own aspect correction (only x is
+        // scaled), so this measures the same distance it will actually draw.
+        const dx =
+          (trail.pointerUv.x - trail.lastPointerUv.x) * aspect * TRAIL_RESOLUTION;
+        const dy =
+          (trail.pointerUv.y - trail.lastPointerUv.y) * TRAIL_RESOLUTION;
+        const jumpPixels = Math.hypot(dx, dy);
+
+        if (jumpPixels > MAX_JUMP_PIXELS) {
+          // Teleport: snap without painting a connecting stroke across the gap.
+          trail.lastPointerUv.copy(trail.pointerUv);
+        }
 
         isMoving =
           trail.pointerUv.distanceTo(trail.lastPointerUv) > STATIONARY_EPSILON;
