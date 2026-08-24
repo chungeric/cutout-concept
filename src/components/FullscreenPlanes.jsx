@@ -60,18 +60,19 @@ export function FullscreenPlanes({ orbitEnabled }) {
         trailEnabled: true,
         debugTrailMap: false,
         trailRadius: { value: 0.1, min: 0.01, max: 0.3, step: 0.01 },
-        trailDecay: { value: 0.96, min: 0.8, max: 1, step: 0.01 },
+        trailDecay: { value: 0.92, min: 0.8, max: 1, step: 0.01 },
         fluidThreshold: { value: 0.74, min: 0.01, max: 1, step: 0.01 },
       },
       { collapsed: true },
     ),
   });
-  const { debugNoiseMap, noiseScale, progress } = useControls({
-    Noise: folder(
+  const { debugReveal, noiseScale, octaves, revealProgress } = useControls({
+    Reveal: folder(
       {
-        debugNoiseMap: false,
+        debugReveal: false,
         noiseScale: { value: 6, min: 1, max: 20, step: 1 },
-        progress: { value: 0, min: 0, max: 1, step: 0.01 },
+        octaves: { value: 4, min: 1, max: 8, step: 1 },
+        revealProgress: { value: 0, min: 0, max: 1, step: 0.01 },
       },
       { collapsed: true },
     ),
@@ -130,8 +131,9 @@ export function FullscreenPlanes({ orbitEnabled }) {
       fluidEnabled: { value: trailEnabled },
       debugTrailMap: { value: debugTrailMap },
       noiseScale: { value: noiseScale },
-      progress: { value: progress },
-      debugNoiseMap: { value: debugNoiseMap },
+      octaves: { value: octaves },
+      revealProgress: { value: revealProgress },
+      debugReveal: { value: debugReveal },
     }),
     [
       texture,
@@ -145,8 +147,9 @@ export function FullscreenPlanes({ orbitEnabled }) {
       trailEnabled,
       debugTrailMap,
       noiseScale,
-      progress,
-      debugNoiseMap,
+      octaves,
+      revealProgress,
+      debugReveal,
     ],
   );
 
@@ -163,7 +166,8 @@ export function FullscreenPlanes({ orbitEnabled }) {
       backgroundColor: { value: new THREE.Color(checkerBackgroundColor) },
       checkerScale: { value: checkerScale },
       noiseScale: { value: noiseScale },
-      progress: { value: progress },
+      octaves: { value: octaves },
+      revealProgress: { value: revealProgress },
     }),
     [
       texture,
@@ -178,7 +182,8 @@ export function FullscreenPlanes({ orbitEnabled }) {
       checkerBackgroundColor,
       checkerScale,
       noiseScale,
-      progress,
+      octaves,
+      revealProgress,
     ],
   );
 
@@ -193,7 +198,8 @@ export function FullscreenPlanes({ orbitEnabled }) {
       fluidThreshold: { value: fluidThreshold },
       fluidEnabled: { value: trailEnabled },
       noiseScale: { value: noiseScale },
-      progress: { value: progress },
+      octaves: { value: octaves },
+      revealProgress: { value: revealProgress },
     }),
     [
       texture,
@@ -206,7 +212,8 @@ export function FullscreenPlanes({ orbitEnabled }) {
       fluidThreshold,
       trailEnabled,
       noiseScale,
-      progress,
+      octaves,
+      revealProgress,
     ],
   );
 

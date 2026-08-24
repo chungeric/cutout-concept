@@ -19,7 +19,8 @@ export const checkerboardFragmentShader = /* glsl */ `
   uniform vec3 backgroundColor;
   uniform float checkerScale;
   uniform float noiseScale;
-  uniform float progress;
+  uniform int octaves;
+  uniform float revealProgress;
 
   varying vec2 vUv;
 
@@ -49,13 +50,13 @@ export const checkerboardFragmentShader = /* glsl */ `
     }
 
     // Cut out using a thresholded noise pattern as a growing/shrinking
-    // organic mask driven by progress: at progress 0 virtually nothing is
-    // cut, and as it rises toward 1 more of the noise pattern falls below it
-    // and gets cut away. Aspect-correct so the noise stays square instead of
-    // stretching to the plane's own width/height ratio.
+    // organic mask driven by revealProgress: at revealProgress 0 virtually
+    // nothing is cut, and as it rises toward 1 more of the noise pattern
+    // falls below it and gets cut away. Aspect-correct so the noise stays
+    // square instead of stretching to the plane's own width/height ratio.
     vec2 noiseUv = vUv * vec2(faceAspect, 1.0) * noiseScale;
-    float noiseValue = fbm(noiseUv) * 0.5 + 0.5;
-    if (noiseValue < progress) {
+    float noiseValue = fbm(noiseUv, octaves) * 0.5 + 0.5;
+    if (noiseValue < revealProgress) {
       discard;
     }
 

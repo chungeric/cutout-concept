@@ -22,8 +22,9 @@ export const cutoutFragmentShader = /* glsl */ `
   uniform bool fluidEnabled;
   uniform bool debugTrailMap;
   uniform float noiseScale;
-  uniform float progress;
-  uniform bool debugNoiseMap;
+  uniform int octaves;
+  uniform float revealProgress;
+  uniform bool debugReveal;
 
   varying vec2 vUv;
 
@@ -45,10 +46,10 @@ export const cutoutFragmentShader = /* glsl */ `
 
     // Debug: show the procedural noise directly, skipping normal rendering
     // entirely. Thresholded to a hard black/white cutoff (a contour line at
-    // progress) instead of the raw smooth/blurry gradient.
-    if (debugNoiseMap) {
-      float noiseValue = fbm(noiseUv) * 0.5 + 0.5;
-      float mask = step(progress, noiseValue);
+    // revealProgress) instead of the raw smooth/blurry gradient.
+    if (debugReveal) {
+      float noiseValue = fbm(noiseUv, octaves) * 0.5 + 0.5;
+      float mask = step(revealProgress, noiseValue);
       gl_FragColor = vec4(vec3(mask), 1.0);
       #include <colorspace_fragment>
       return;
@@ -81,11 +82,11 @@ export const cutoutFragmentShader = /* glsl */ `
     }
 
     // Cut out using the same thresholded noise pattern shown in the debug
-    // view, as a growing/shrinking organic mask driven by progress: at
-    // progress 0 virtually nothing is cut, and as it rises toward 1 more of
-    // the noise pattern falls below it and gets cut away.
-    float noiseValue = fbm(noiseUv) * 0.5 + 0.5;
-    if (noiseValue < progress) {
+    // view, as a growing/shrinking organic mask driven by revealProgress: at
+    // revealProgress 0 virtually nothing is cut, and as it rises toward 1
+    // more of the noise pattern falls below it and gets cut away.
+    float noiseValue = fbm(noiseUv, octaves) * 0.5 + 0.5;
+    if (noiseValue < revealProgress) {
       discard;
     }
 

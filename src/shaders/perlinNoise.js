@@ -53,11 +53,18 @@ export const perlinNoiseGLSL = /* glsl */ `
 
   // Fractal Brownian motion: sums several octaves of perlinNoise at
   // doubling frequency and halving amplitude, giving a more organic,
-  // detailed pattern than a single octave alone.
-  float fbm(vec2 p) {
+  // detailed pattern than a single octave alone. octaves is dynamic (a
+  // uniform), but GLSL ES 1.00 loop bounds must be compile-time constants,
+  // so the loop always runs to MAX_OCTAVES and just breaks early once it
+  // reaches the requested count - the standard portable way to get a
+  // uniform-controlled iteration count.
+  const int MAX_OCTAVES = 8;
+
+  float fbm(vec2 p, int octaves) {
     float value = 0.0;
     float amplitude = 0.5;
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < MAX_OCTAVES; i++) {
+      if (i >= octaves) break;
       value += amplitude * perlinNoise(p);
       p *= 2.0;
       amplitude *= 0.5;
