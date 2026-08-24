@@ -1,9 +1,12 @@
 import { useRef } from "react";
 import * as THREE from "three";
-import { dotsFragmentShader, dotsVertexShader } from "../shaders/dots";
+import {
+  checkerboardFragmentShader,
+  checkerboardVertexShader,
+} from "../shaders/checkerboard";
 import { useStableUniform } from "../hooks/useStableUniform";
 
-export function DotPlane({ width, height, position, uniforms }) {
+export function CheckerPlane({ width, height, position, uniforms }) {
   const materialRef = useRef();
   useStableUniform(materialRef, "fluidMap", uniforms.fluidMap);
 
@@ -13,8 +16,8 @@ export function DotPlane({ width, height, position, uniforms }) {
       <shaderMaterial
         ref={materialRef}
         uniforms={uniforms}
-        vertexShader={dotsVertexShader}
-        fragmentShader={dotsFragmentShader}
+        vertexShader={checkerboardVertexShader}
+        fragmentShader={checkerboardFragmentShader}
         side={THREE.DoubleSide}
       />
     </mesh>

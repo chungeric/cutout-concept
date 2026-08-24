@@ -6,7 +6,7 @@ import { folder, useControls } from "leva";
 import { useCursorTrail } from "../hooks/useCursorTrail";
 import { FrontPlane } from "./FrontPlane";
 import { BackPlane } from "./BackPlane";
-import { DotPlane } from "./DotPlane";
+import { CheckerPlane } from "./CheckerPlane";
 
 // How far the plane stack tilts toward the cursor when orbit is off, and how
 // quickly it eases toward that target each frame.
@@ -59,16 +59,13 @@ export function FullscreenPlanes({ orbitEnabled }) {
       fluidThreshold: { value: 0.5, min: 0.01, max: 1, step: 0.01 },
     }),
   });
-  const { dotColor, dotBackgroundColor, dotSize, dotSpacing, noiseAmount } =
-    useControls({
-      Dots: folder({
-        dotColor: "#7bc3e2",
-        dotBackgroundColor: "#05020a",
-        dotSize: { value: 4, min: 1, max: 100, step: 1 },
-        dotSpacing: { value: 5, min: 5, max: 200, step: 1 },
-        noiseAmount: { value: 0.06, min: 0, max: 1, step: 0.01 },
-      }),
-    });
+  const { checkerColor, checkerBackgroundColor, checkerScale } = useControls({
+    Checkerboard: folder({
+      checkerColor: "#7bc3e2",
+      checkerBackgroundColor: "#05020a",
+      checkerScale: { value: 3, min: 2, max: 10, step: 1 },
+    }),
+  });
   const texture = useTexture("/eric_chung.png", (loadedTexture) => {
     loadedTexture.colorSpace = THREE.SRGBColorSpace;
     loadedTexture.needsUpdate = true;
@@ -111,7 +108,7 @@ export function FullscreenPlanes({ orbitEnabled }) {
     ],
   );
 
-  const dotUniforms = useMemo(
+  const checkerUniforms = useMemo(
     () => ({
       map: { value: texture },
       faceAspect: { value: width / height },
@@ -120,11 +117,9 @@ export function FullscreenPlanes({ orbitEnabled }) {
       fluidMap: fluidMapUniform,
       fluidThreshold: { value: fluidThreshold },
       fluidEnabled: { value: trailEnabled },
-      dotColor: { value: new THREE.Color(dotColor) },
-      backgroundColor: { value: new THREE.Color(dotBackgroundColor) },
-      dotSize: { value: dotSize },
-      dotSpacing: { value: dotSpacing },
-      noiseAmount: { value: noiseAmount },
+      checkerColor: { value: new THREE.Color(checkerColor) },
+      backgroundColor: { value: new THREE.Color(checkerBackgroundColor) },
+      checkerScale: { value: checkerScale },
     }),
     [
       texture,
@@ -135,11 +130,9 @@ export function FullscreenPlanes({ orbitEnabled }) {
       fluidMapUniform,
       fluidThreshold,
       trailEnabled,
-      dotColor,
-      dotBackgroundColor,
-      dotSize,
-      dotSpacing,
-      noiseAmount,
+      checkerColor,
+      checkerBackgroundColor,
+      checkerScale,
     ],
   );
 
@@ -194,12 +187,12 @@ export function FullscreenPlanes({ orbitEnabled }) {
         }
 
         return (
-          <DotPlane
+          <CheckerPlane
             key={i}
             width={planeWidth}
             height={planeHeight}
             position={position}
-            uniforms={dotUniforms}
+            uniforms={checkerUniforms}
           />
         );
       })}
