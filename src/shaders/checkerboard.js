@@ -54,7 +54,7 @@ export const checkerboardFragmentShader = /* glsl */ `
     // and gets cut away. Aspect-correct so the noise stays square instead of
     // stretching to the plane's own width/height ratio.
     vec2 noiseUv = vUv * vec2(faceAspect, 1.0) * noiseScale;
-    float noiseValue = perlinNoise(noiseUv) * 0.5 + 0.5;
+    float noiseValue = fbm(noiseUv) * 0.5 + 0.5;
     if (noiseValue < progress) {
       discard;
     }

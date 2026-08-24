@@ -50,4 +50,18 @@ export const perlinNoiseGLSL = /* glsl */ `
     float nXY = mix(nX.x, nX.y, fadeXY.y);
     return 2.3 * nXY;
   }
+
+  // Fractal Brownian motion: sums several octaves of perlinNoise at
+  // doubling frequency and halving amplitude, giving a more organic,
+  // detailed pattern than a single octave alone.
+  float fbm(vec2 p) {
+    float value = 0.0;
+    float amplitude = 0.5;
+    for (int i = 0; i < 4; i++) {
+      value += amplitude * perlinNoise(p);
+      p *= 2.0;
+      amplitude *= 0.5;
+    }
+    return value;
+  }
 `;

@@ -47,7 +47,7 @@ export const cutoutFragmentShader = /* glsl */ `
     // entirely. Thresholded to a hard black/white cutoff (a contour line at
     // progress) instead of the raw smooth/blurry gradient.
     if (debugNoiseMap) {
-      float noiseValue = perlinNoise(noiseUv) * 0.5 + 0.5;
+      float noiseValue = fbm(noiseUv) * 0.5 + 0.5;
       float mask = step(progress, noiseValue);
       gl_FragColor = vec4(vec3(mask), 1.0);
       #include <colorspace_fragment>
@@ -84,7 +84,7 @@ export const cutoutFragmentShader = /* glsl */ `
     // view, as a growing/shrinking organic mask driven by progress: at
     // progress 0 virtually nothing is cut, and as it rises toward 1 more of
     // the noise pattern falls below it and gets cut away.
-    float noiseValue = perlinNoise(noiseUv) * 0.5 + 0.5;
+    float noiseValue = fbm(noiseUv) * 0.5 + 0.5;
     if (noiseValue < progress) {
       discard;
     }
