@@ -35,11 +35,14 @@ export function FullscreenPlanes({ orbitEnabled }) {
   const planeOverscan = TILT_SAFETY_BUFFER / (1 - Math.min(tiltRecession, 0.9));
   const planeWidth = width * planeOverscan;
   const planeHeight = height * planeOverscan;
-  const { color, threshold, count, spacing } = useControls({
-    color: "#05020a",
-    threshold: { value: 0.15, min: 0, max: 1, step: 0.01 },
-    count: { value: 30, min: 1, max: 100, step: 1 },
-    spacing: { value: 0.009, min: 0, max: 1, step: 0.0001 },
+  const { planesVisible, color, threshold, count, spacing } = useControls({
+    Planes: folder({
+      planesVisible: true,
+      color: "#05020a",
+      threshold: { value: 0.15, min: 0, max: 1, step: 0.01 },
+      count: { value: 30, min: 1, max: 100, step: 1 },
+      spacing: { value: 0.009, min: 0, max: 1, step: 0.0001 },
+    }),
   });
   const {
     trailEnabled,
@@ -162,7 +165,7 @@ export function FullscreenPlanes({ orbitEnabled }) {
   });
 
   return (
-    <group ref={groupRef}>
+    <group ref={groupRef} visible={planesVisible}>
       {Array.from({ length: count }, (_, i) => {
         const position = [0, 0, -i * spacing];
 

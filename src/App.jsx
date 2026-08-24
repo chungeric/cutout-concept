@@ -1,14 +1,17 @@
 import { Canvas } from "@react-three/fiber";
 import { Environment, OrbitControls } from "@react-three/drei";
-import { useControls } from "leva";
+import { folder, useControls } from "leva";
 import "./App.css";
 import { SpinningBox } from "./components/SpinningBox";
+import { Particles } from "./components/Particles";
 import { FullscreenPlanes } from "./components/FullscreenPlanes";
 
 function App() {
   const { background, orbitEnabled } = useControls({
-    background: "#7bc3e2",
-    orbitEnabled: false,
+    Scene: folder({
+      background: "#7bc3e2",
+      orbitEnabled: false,
+    }),
   });
 
   return (
@@ -16,6 +19,7 @@ function App() {
       <color attach="background" args={[background]} />
       <Environment preset="studio" />
       <SpinningBox />
+      <Particles />
       <FullscreenPlanes orbitEnabled={orbitEnabled} />
       <OrbitControls enabled={orbitEnabled} />
     </Canvas>
