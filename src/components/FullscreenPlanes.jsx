@@ -66,6 +66,16 @@ export function FullscreenPlanes({ orbitEnabled }) {
       { collapsed: true },
     ),
   });
+  const { debugNoiseMap, noiseScale, progress } = useControls({
+    Noise: folder(
+      {
+        debugNoiseMap: false,
+        noiseScale: { value: 6, min: 1, max: 20, step: 1 },
+        progress: { value: 0, min: 0, max: 1, step: 0.01 },
+      },
+      { collapsed: true },
+    ),
+  });
   const {
     middlePattern,
     middleColor,
@@ -119,6 +129,9 @@ export function FullscreenPlanes({ orbitEnabled }) {
       fluidThreshold: { value: fluidThreshold },
       fluidEnabled: { value: trailEnabled },
       debugTrailMap: { value: debugTrailMap },
+      noiseScale: { value: noiseScale },
+      progress: { value: progress },
+      debugNoiseMap: { value: debugNoiseMap },
     }),
     [
       texture,
@@ -131,6 +144,9 @@ export function FullscreenPlanes({ orbitEnabled }) {
       fluidThreshold,
       trailEnabled,
       debugTrailMap,
+      noiseScale,
+      progress,
+      debugNoiseMap,
     ],
   );
 
@@ -146,6 +162,8 @@ export function FullscreenPlanes({ orbitEnabled }) {
       checkerColor: { value: new THREE.Color(checkerColor) },
       backgroundColor: { value: new THREE.Color(checkerBackgroundColor) },
       checkerScale: { value: checkerScale },
+      noiseScale: { value: noiseScale },
+      progress: { value: progress },
     }),
     [
       texture,
@@ -159,6 +177,8 @@ export function FullscreenPlanes({ orbitEnabled }) {
       checkerColor,
       checkerBackgroundColor,
       checkerScale,
+      noiseScale,
+      progress,
     ],
   );
 
@@ -172,6 +192,8 @@ export function FullscreenPlanes({ orbitEnabled }) {
       fluidMap: fluidMapUniform,
       fluidThreshold: { value: fluidThreshold },
       fluidEnabled: { value: trailEnabled },
+      noiseScale: { value: noiseScale },
+      progress: { value: progress },
     }),
     [
       texture,
@@ -183,6 +205,8 @@ export function FullscreenPlanes({ orbitEnabled }) {
       fluidMapUniform,
       fluidThreshold,
       trailEnabled,
+      noiseScale,
+      progress,
     ],
   );
 

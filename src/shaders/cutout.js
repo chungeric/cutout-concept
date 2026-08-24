@@ -1,3 +1,5 @@
+import { perlinNoiseGLSL } from "./perlinNoise";
+
 export const cutoutVertexShader = /* glsl */ `
   varying vec2 vUv;
 
@@ -19,8 +21,13 @@ export const cutoutFragmentShader = /* glsl */ `
   uniform float fluidThreshold;
   uniform bool fluidEnabled;
   uniform bool debugTrailMap;
+  uniform float noiseScale;
+  uniform float progress;
+  uniform bool debugNoiseMap;
 
   varying vec2 vUv;
+
+  ${perlinNoiseGLSL}
 
   void main() {
     // Debug: show the raw fluid dye density directly, skipping the image
@@ -28,6 +35,21 @@ export const cutoutFragmentShader = /* glsl */ `
     if (debugTrailMap) {
       float fluidDensity = texture2D(fluidMap, vUv).r;
       gl_FragColor = vec4(vec3(fluidDensity), 1.0);
+      #include <colorspace_fragment>
+      return;
+    }
+
+    // Aspect-correct so the noise stays square instead of stretching to the
+    // plane's own width/height ratio.
+    vec2 noiseUv = vUv * vec2(faceAspect, 1.0) * noiseScale;
+
+    // Debug: show the procedural noise directly, skipping normal rendering
+    // entirely. Thresholded to a hard black/white cutoff (a contour line at
+    // progress) instead of the raw smooth/blurry gradient.
+    if (debugNoiseMap) {
+      float noiseValue = perlinNoise(noiseUv) * 0.5 + 0.5;
+      float mask = step(progress, noiseValue);
+      gl_FragColor = vec4(vec3(mask), 1.0);
       #include <colorspace_fragment>
       return;
     }
@@ -56,6 +78,15 @@ export const cutoutFragmentShader = /* glsl */ `
       if (fluidDensity > fluidThreshold) {
         discard;
       }
+    }
+
+    // Cut out using the same thresholded noise pattern shown in the debug
+    // view, as a growing/shrinking organic mask driven by progress: at
+    // progress 0 virtually nothing is cut, and as it rises toward 1 more of
+    // the noise pattern falls below it and gets cut away.
+    float noiseValue = perlinNoise(noiseUv) * 0.5 + 0.5;
+    if (noiseValue < progress) {
+      discard;
     }
 
     gl_FragColor = vec4(color, 1.0);

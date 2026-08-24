@@ -1,4 +1,5 @@
 import { cutoutVertexShader } from "./cutout";
+import { perlinNoiseGLSL } from "./perlinNoise";
 
 export const checkerboardVertexShader = cutoutVertexShader;
 
@@ -17,8 +18,12 @@ export const checkerboardFragmentShader = /* glsl */ `
   uniform vec3 checkerColor;
   uniform vec3 backgroundColor;
   uniform float checkerScale;
+  uniform float noiseScale;
+  uniform float progress;
 
   varying vec2 vUv;
+
+  ${perlinNoiseGLSL}
 
   void main() {
     // Same "contain"-fit cutout mask as the front plane.
@@ -41,6 +46,17 @@ export const checkerboardFragmentShader = /* glsl */ `
       if (fluidDensity > fluidThreshold) {
         discard;
       }
+    }
+
+    // Cut out using a thresholded noise pattern as a growing/shrinking
+    // organic mask driven by progress: at progress 0 virtually nothing is
+    // cut, and as it rises toward 1 more of the noise pattern falls below it
+    // and gets cut away. Aspect-correct so the noise stays square instead of
+    // stretching to the plane's own width/height ratio.
+    vec2 noiseUv = vUv * vec2(faceAspect, 1.0) * noiseScale;
+    float noiseValue = perlinNoise(noiseUv) * 0.5 + 0.5;
+    if (noiseValue < progress) {
+      discard;
     }
 
     vec2 cell = floor(gl_FragCoord.xy / checkerScale);
