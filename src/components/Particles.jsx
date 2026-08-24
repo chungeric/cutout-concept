@@ -23,16 +23,20 @@ export function Particles() {
     opacity,
     softness,
     rotationSpeed,
-  } = useControls("Particles", {
-    count: { value: 1000, min: 0, max: 1000, step: 10 },
-    spread: { value: 20, min: 1, max: 40, step: 0.5 },
-    depthSpread: { value: 20, min: 1, max: 30, step: 0.5 },
-    size: { value: 0.3, min: 0.05, max: 1, step: 0.01 },
-    color: "#8dbfd5",
-    opacity: { value: 1, min: 0, max: 1, step: 0.05 },
-    softness: { value: 0.08, min: 0, max: 1, step: 0.01 },
-    rotationSpeed: { value: 0.2, min: 0, max: 0.5, step: 0.01 },
-  });
+  } = useControls(
+    "Particles",
+    {
+      count: { value: 1000, min: 0, max: 1000, step: 10 },
+      spread: { value: 20, min: 1, max: 40, step: 0.5 },
+      depthSpread: { value: 20, min: 1, max: 30, step: 0.5 },
+      size: { value: 0.3, min: 0.05, max: 1, step: 0.01 },
+      color: "#8dbfd5",
+      opacity: { value: 1, min: 0, max: 1, step: 0.05 },
+      softness: { value: 0.08, min: 0, max: 1, step: 0.01 },
+      rotationSpeed: { value: 0.2, min: 0, max: 0.5, step: 0.01 },
+    },
+    { collapsed: true },
+  );
 
   const positions = useMemo(() => {
     const array = new Float32Array(count * 3);

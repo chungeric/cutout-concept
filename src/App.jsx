@@ -8,10 +8,13 @@ import { FullscreenPlanes } from "./components/FullscreenPlanes";
 
 function App() {
   const { background, orbitEnabled } = useControls({
-    Scene: folder({
-      background: "#7bc3e2",
-      orbitEnabled: false,
-    }),
+    Scene: folder(
+      {
+        background: "#7bc3e2",
+        orbitEnabled: false,
+      },
+      { collapsed: true },
+    ),
   });
 
   return (

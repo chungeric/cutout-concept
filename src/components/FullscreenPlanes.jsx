@@ -7,6 +7,7 @@ import { useCursorTrail } from "../hooks/useCursorTrail";
 import { FrontPlane } from "./FrontPlane";
 import { BackPlane } from "./BackPlane";
 import { CheckerPlane } from "./CheckerPlane";
+import { ColorPlane } from "./ColorPlane";
 
 // How far the plane stack tilts toward the cursor when orbit is off, and how
 // quickly it eases toward that target each frame.
@@ -36,13 +37,16 @@ export function FullscreenPlanes({ orbitEnabled }) {
   const planeWidth = width * planeOverscan;
   const planeHeight = height * planeOverscan;
   const { planesVisible, color, threshold, count, spacing } = useControls({
-    Planes: folder({
-      planesVisible: true,
-      color: "#05020a",
-      threshold: { value: 0.15, min: 0, max: 1, step: 0.01 },
-      count: { value: 30, min: 1, max: 100, step: 1 },
-      spacing: { value: 0.009, min: 0, max: 1, step: 0.0001 },
-    }),
+    Planes: folder(
+      {
+        planesVisible: true,
+        color: "#05020a",
+        threshold: { value: 0.15, min: 0, max: 1, step: 0.01 },
+        count: { value: 30, min: 1, max: 100, step: 1 },
+        spacing: { value: 0.009, min: 0, max: 1, step: 0.0001 },
+      },
+      { collapsed: true },
+    ),
   });
   const {
     trailEnabled,
@@ -51,20 +55,42 @@ export function FullscreenPlanes({ orbitEnabled }) {
     trailDecay,
     fluidThreshold,
   } = useControls({
-    Trail: folder({
-      trailEnabled: true,
-      debugTrailMap: false,
-      trailRadius: { value: 0.1, min: 0.01, max: 0.3, step: 0.01 },
-      trailDecay: { value: 0.9, min: 0.8, max: 1, step: 0.005 },
-      fluidThreshold: { value: 0.5, min: 0.01, max: 1, step: 0.01 },
-    }),
+    Trail: folder(
+      {
+        trailEnabled: true,
+        debugTrailMap: false,
+        trailRadius: { value: 0.1, min: 0.01, max: 0.3, step: 0.01 },
+        trailDecay: { value: 0.97, min: 0.8, max: 1, step: 0.01 },
+        fluidThreshold: { value: 1, min: 0.01, max: 1, step: 0.01 },
+      },
+      { collapsed: true },
+    ),
   });
-  const { checkerColor, checkerBackgroundColor, checkerScale } = useControls({
-    Checkerboard: folder({
-      checkerColor: "#7bc3e2",
-      checkerBackgroundColor: "#05020a",
-      checkerScale: { value: 3, min: 2, max: 10, step: 1 },
-    }),
+  const {
+    middlePattern,
+    middleColor,
+    checkerColor,
+    checkerBackgroundColor,
+    checkerScale,
+  } = useControls({
+    "Middle Pattern": folder(
+      {
+        middlePattern: {
+          value: "Checkerboard",
+          options: ["Color", "Checkerboard"],
+        },
+        Color: folder({ middleColor: "#7bc3e2" }, { collapsed: true }),
+        Checkerboard: folder(
+          {
+            checkerColor: "#7bc3e2",
+            checkerBackgroundColor: "#05020a",
+            checkerScale: { value: 4, min: 2, max: 10, step: 1 },
+          },
+          { collapsed: true },
+        ),
+      },
+      { collapsed: true },
+    ),
   });
   const texture = useTexture("/eric_chung.png", (loadedTexture) => {
     loadedTexture.colorSpace = THREE.SRGBColorSpace;
@@ -136,6 +162,30 @@ export function FullscreenPlanes({ orbitEnabled }) {
     ],
   );
 
+  const middleColorUniforms = useMemo(
+    () => ({
+      map: { value: texture },
+      color: { value: new THREE.Color(middleColor) },
+      faceAspect: { value: width / height },
+      imageAspect: { value: imageAspect },
+      threshold: { value: threshold },
+      fluidMap: fluidMapUniform,
+      fluidThreshold: { value: fluidThreshold },
+      fluidEnabled: { value: trailEnabled },
+    }),
+    [
+      texture,
+      middleColor,
+      width,
+      height,
+      imageAspect,
+      threshold,
+      fluidMapUniform,
+      fluidThreshold,
+      trailEnabled,
+    ],
+  );
+
   useFrame((state) => {
     if (!groupRef.current) return;
 
@@ -186,13 +236,25 @@ export function FullscreenPlanes({ orbitEnabled }) {
           );
         }
 
+        if (middlePattern === "Checkerboard") {
+          return (
+            <CheckerPlane
+              key={i}
+              width={planeWidth}
+              height={planeHeight}
+              position={position}
+              uniforms={checkerUniforms}
+            />
+          );
+        }
+
         return (
-          <CheckerPlane
+          <ColorPlane
             key={i}
             width={planeWidth}
             height={planeHeight}
             position={position}
-            uniforms={checkerUniforms}
+            uniforms={middleColorUniforms}
           />
         );
       })}

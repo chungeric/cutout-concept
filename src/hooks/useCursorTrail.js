@@ -6,7 +6,7 @@ import { createTrail, runTrailStep } from "../shaders/trail";
 // Below this much on-plane UV movement per frame, treat the pointer as
 // stationary and stop adding paint, so a resting cursor doesn't keep
 // replenishing a permanent blob faster than decay can fade it.
-const STATIONARY_EPSILON = 1e-5;
+const STATIONARY_EPSILON = 0.001;
 
 /**
  * Paints a soft, fading trail wherever the pointer moves across the plane
