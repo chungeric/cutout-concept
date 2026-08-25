@@ -90,11 +90,11 @@ export function FullscreenPlanes({ orbitEnabled }) {
           value: "Checkerboard",
           options: ["Color", "Checkerboard"],
         },
-        Color: folder({ middleColor: "#7bc3e2" }, { collapsed: true }),
+        Color: folder({ middleColor: "#84a5be" }, { collapsed: true }),
         Checkerboard: folder(
           {
-            checkerColor: "#e9ff00",
-            checkerBackgroundColor: "#00db37",
+            checkerColor: "#84a5be",
+            checkerBackgroundColor: "#8eadc4",
             checkerScale: { value: 3, min: 2, max: 10, step: 1 },
           },
           { collapsed: true },

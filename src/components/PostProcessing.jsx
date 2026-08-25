@@ -15,7 +15,7 @@ export function PostProcessing() {
         {
           bloomEnabled: true,
           intensity: { value: 1, min: 0, max: 5, step: 0.05 },
-          luminanceThreshold: { value: 0.4, min: 0, max: 1, step: 0.01 },
+          luminanceThreshold: { value: 0.25, min: 0, max: 1, step: 0.01 },
           luminanceSmoothing: { value: 0.9, min: 0, max: 1, step: 0.01 },
           mipmapBlur: true,
         },
@@ -27,7 +27,7 @@ export function PostProcessing() {
     Pixelation: folder(
       {
         pixelationEnabled: true,
-        granularity: { value: 1, min: 1, max: 30, step: 1 },
+        granularity: { value: 3, min: 1, max: 30, step: 1 },
       },
       { collapsed: true },
     ),
@@ -37,7 +37,7 @@ export function PostProcessing() {
     "Chromatic Aberration": folder(
       {
         chromaticAberrationEnabled: true,
-        offset: { value: 0.0015, min: 0, max: 0.01, step: 0.0001 },
+        offset: { value: 0.0005, min: 0, max: 0.01, step: 0.0001 },
       },
       { collapsed: true },
     ),

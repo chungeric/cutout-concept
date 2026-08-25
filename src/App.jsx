@@ -1,6 +1,6 @@
 import { Canvas } from "@react-three/fiber";
 import { Environment, OrbitControls } from "@react-three/drei";
-import { folder, useControls } from "leva";
+import { button, folder, levaStore, useControls } from "leva";
 import "./App.css";
 import { SpinningBox } from "./components/SpinningBox";
 import { Particles } from "./components/Particles";
@@ -13,10 +13,28 @@ function App() {
       {
         background: "#330e4b",
         orbitEnabled: false,
-        quality: { value: 0.5, min: 0.25, max: 2, step: 0.05 },
+        quality: { value: 0.65, min: 0.25, max: 2, step: 0.05 },
       },
       { collapsed: true },
     ),
+  });
+
+  useControls({
+    "Copy Values": {
+      ...button(() => {
+        const data = levaStore.getData();
+        const values = Object.fromEntries(
+          Object.entries(data)
+            .filter(([, input]) => input.type !== "BUTTON")
+            .map(([path, input]) => [path, input.value]),
+        );
+        navigator.clipboard.writeText(JSON.stringify(values, null, 2));
+      }),
+      // Root-level controls/folders default to order 0 and are otherwise
+      // sorted by hook-registration order, so this pushes the button below
+      // every folder regardless of where the other components mount.
+      order: 100,
+    },
   });
 
   return (
