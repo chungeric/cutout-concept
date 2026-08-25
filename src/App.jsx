@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { Canvas } from "@react-three/fiber";
 import { Environment, OrbitControls } from "@react-three/drei";
 import { button, folder, levaStore, useControls } from "leva";
@@ -8,6 +9,7 @@ import { FullscreenPlanes } from "./components/FullscreenPlanes";
 import { PostProcessing } from "./components/PostProcessing";
 
 function App() {
+  const pointerDownRef = useRef(false);
   const { background, orbitEnabled, quality } = useControls({
     Scene: folder(
       {
@@ -38,12 +40,24 @@ function App() {
   });
 
   return (
-    <Canvas camera={{ fov: 30 }} dpr={quality}>
+    <Canvas
+      camera={{ fov: 30 }}
+      dpr={quality}
+      onPointerDown={() => {
+        pointerDownRef.current = true;
+      }}
+      onPointerUp={() => {
+        pointerDownRef.current = false;
+      }}
+    >
       <color attach="background" args={[background]} />
       <Environment preset="studio" />
       <SpinningBox />
       <Particles />
-      <FullscreenPlanes orbitEnabled={orbitEnabled} />
+      <FullscreenPlanes
+        orbitEnabled={orbitEnabled}
+        pointerDownRef={pointerDownRef}
+      />
       <OrbitControls enabled={orbitEnabled} />
       <PostProcessing />
     </Canvas>

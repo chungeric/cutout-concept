@@ -8,6 +8,7 @@ import { FrontPlane } from "./FrontPlane";
 import { BackPlane } from "./BackPlane";
 import { CheckerPlane } from "./CheckerPlane";
 import { ColorPlane } from "./ColorPlane";
+import { RevealProgress } from "./RevealProgress";
 
 // How far the plane stack tilts toward the cursor when orbit is off, and how
 // quickly it eases toward that target each frame.
@@ -19,7 +20,7 @@ const TILT_EASE = 0.05;
 // easing toward MAX_TILT and the geometry being sized for it.
 const TILT_SAFETY_BUFFER = 1.15;
 
-export function FullscreenPlanes({ orbitEnabled }) {
+export function FullscreenPlanes({ orbitEnabled, pointerDownRef }) {
   const groupRef = useRef(null);
   const { width, height, distance } = useThree((state) => state.viewport);
 
@@ -66,13 +67,12 @@ export function FullscreenPlanes({ orbitEnabled }) {
       { collapsed: true },
     ),
   });
-  const { debugReveal, noiseScale, octaves, revealProgress } = useControls({
+  const { debugReveal, noiseScale, octaves } = useControls({
     Reveal: folder(
       {
         debugReveal: false,
         noiseScale: { value: 6, min: 1, max: 20, step: 1 },
         octaves: { value: 4, min: 1, max: 8, step: 1 },
-        revealProgress: { value: 0, min: 0, max: 1, step: 0.01 },
       },
       { collapsed: true },
     ),
@@ -109,6 +109,10 @@ export function FullscreenPlanes({ orbitEnabled }) {
   });
   const imageAspect = texture.image.width / texture.image.height;
 
+  // Mutated directly every frame by <RevealProgress>, so it's a single
+  // shared container rather than a Leva-controlled value read here.
+  const revealProgressUniform = useMemo(() => ({ value: 0 }), []);
+
   const fluidMapUniform = useCursorTrail({
     width: planeWidth,
     height: planeHeight,
@@ -132,7 +136,7 @@ export function FullscreenPlanes({ orbitEnabled }) {
       debugTrailMap: { value: debugTrailMap },
       noiseScale: { value: noiseScale },
       octaves: { value: octaves },
-      revealProgress: { value: revealProgress },
+      revealProgress: revealProgressUniform,
       debugReveal: { value: debugReveal },
     }),
     [
@@ -148,7 +152,7 @@ export function FullscreenPlanes({ orbitEnabled }) {
       debugTrailMap,
       noiseScale,
       octaves,
-      revealProgress,
+      revealProgressUniform,
       debugReveal,
     ],
   );
@@ -167,7 +171,7 @@ export function FullscreenPlanes({ orbitEnabled }) {
       checkerScale: { value: checkerScale },
       noiseScale: { value: noiseScale },
       octaves: { value: octaves },
-      revealProgress: { value: revealProgress },
+      revealProgress: revealProgressUniform,
     }),
     [
       texture,
@@ -183,7 +187,7 @@ export function FullscreenPlanes({ orbitEnabled }) {
       checkerScale,
       noiseScale,
       octaves,
-      revealProgress,
+      revealProgressUniform,
     ],
   );
 
@@ -199,7 +203,7 @@ export function FullscreenPlanes({ orbitEnabled }) {
       fluidEnabled: { value: trailEnabled },
       noiseScale: { value: noiseScale },
       octaves: { value: octaves },
-      revealProgress: { value: revealProgress },
+      revealProgress: revealProgressUniform,
     }),
     [
       texture,
@@ -213,7 +217,7 @@ export function FullscreenPlanes({ orbitEnabled }) {
       trailEnabled,
       noiseScale,
       octaves,
-      revealProgress,
+      revealProgressUniform,
     ],
   );
 
@@ -240,6 +244,10 @@ export function FullscreenPlanes({ orbitEnabled }) {
 
   return (
     <group ref={groupRef} visible={planesVisible}>
+      <RevealProgress
+        revealProgressUniform={revealProgressUniform}
+        pointerDownRef={pointerDownRef}
+      />
       {Array.from({ length: count }, (_, i) => {
         const position = [0, 0, -i * spacing];
 
