@@ -95,7 +95,7 @@ export function FullscreenPlanes({ orbitEnabled }) {
           {
             checkerColor: "#e9ff00",
             checkerBackgroundColor: "#00db37",
-            checkerScale: { value: 5, min: 2, max: 10, step: 1 },
+            checkerScale: { value: 3, min: 2, max: 10, step: 1 },
           },
           { collapsed: true },
         ),
