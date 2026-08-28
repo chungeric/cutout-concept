@@ -15,7 +15,7 @@ function App() {
       {
         background: "#330e4b",
         orbitEnabled: false,
-        quality: { value: 0.65, min: 0.25, max: 2, step: 0.05 },
+        quality: { value: 1, min: 0.25, max: 2, step: 0.05 },
       },
       { collapsed: true },
     ),
